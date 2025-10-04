@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.List;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -39,9 +39,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         @Override
         public Collection<? extends GrantedAuthority> getAuthorities() {
-            return user.getRoles().stream()
-                    .map(role -> new SimpleGrantedAuthority(role.getName().name()))
-                    .collect(Collectors.toList());
+            return List.of(new SimpleGrantedAuthority(user.getRole().getName().name()));
         }
 
         @Override

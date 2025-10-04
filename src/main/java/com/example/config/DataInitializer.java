@@ -10,9 +10,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @Component
 public class DataInitializer implements CommandLineRunner {
 
@@ -39,7 +36,7 @@ public class DataInitializer implements CommandLineRunner {
             "Administrator", 
             "admin@example.com", 
             "0123456789",
-            Set.of(RoleName.ROLE_ADMIN, RoleName.ROLE_USER)
+            RoleName.ROLE_ADMIN
         );
 
         // Tạo user thường 1
@@ -49,7 +46,7 @@ public class DataInitializer implements CommandLineRunner {
             "Nguyễn Văn A", 
             "user1@example.com", 
             "0987654321",
-            Set.of(RoleName.ROLE_USER)
+            RoleName.ROLE_USER
         );
 
         // Tạo user thường 2
@@ -59,7 +56,7 @@ public class DataInitializer implements CommandLineRunner {
             "Trần Thị B", 
             "user2@example.com", 
             "0111222333",
-            Set.of(RoleName.ROLE_USER)
+            RoleName.ROLE_USER
         );
 
         // Tạo moderator user
@@ -69,7 +66,7 @@ public class DataInitializer implements CommandLineRunner {
             "Lê Văn C", 
             "moderator@example.com", 
             "0444555666",
-            Set.of(RoleName.ROLE_MODERATOR, RoleName.ROLE_USER)
+            RoleName.ROLE_MODERATOR
         );
 
         System.out.println("✅ Khởi tạo dữ liệu mẫu thành công!");
@@ -91,9 +88,13 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void createUserIfNotExists(String username, String password, String name, 
-                                     String email, String phoneNumber, Set<RoleName> roleNames) {
+                                     String email, String phoneNumber, RoleName roleName) {
         if (!userRepository.findByUsername(username).isPresent()) {
-            // Tạo user trước
+            // Lấy role
+            Role role = roleRepository.findByName(roleName)
+                    .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
+
+            // Tạo user
             User user = User.builder()
                     .username(username)
                     .password(passwordEncoder.encode(password))
@@ -101,25 +102,12 @@ public class DataInitializer implements CommandLineRunner {
                     .email(email)
                     .phoneNumber(phoneNumber)
                     .enabled(true)
-                    .roles(new HashSet<>()) // Khởi tạo rỗng trước
+                    .role(role)
                     .build();
 
-            // Lưu user trước
-            User savedUser = userRepository.save(user);
+            userRepository.save(user);
 
-            // Sau đó thêm roles
-            Set<Role> roles = new HashSet<>();
-            for (RoleName roleName : roleNames) {
-                Role role = roleRepository.findByName(roleName)
-                        .orElseThrow(() -> new RuntimeException("Role not found: " + roleName));
-                roles.add(role);
-            }
-            
-            // Cập nhật roles cho user đã lưu
-            savedUser.setRoles(roles);
-            userRepository.save(savedUser);
-
-            System.out.println("👤 Tạo user: " + username + " (" + name + ") với roles: " + roleNames);
+            System.out.println("👤 Tạo user: " + username + " (" + name + ") với role: " + roleName);
         }
     }
 }
